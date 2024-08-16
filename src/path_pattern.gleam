@@ -6,10 +6,15 @@ pub opaque type PathPattern {
   PathPattern(regex: regex.Regex)
 }
 
+pub type Error {
+  OpenBracketError
+  RegexCompileError(context: regex.CompileError)
+}
+
 pub fn from_pattern(
   pattern pattern: String,
   ignore_case ignore_case: Bool,
-) -> Result(PathPattern, Nil) {
+) -> Result(PathPattern, Error) {
   from_prefix_and_string("", pattern, ignore_case)
 }
 
@@ -17,7 +22,7 @@ pub fn from_prefix_and_string(
   prefix prefix: String,
   pattern pattern: String,
   ignore_case ignore_case: Bool,
-) -> Result(PathPattern, Nil) {
+) -> Result(PathPattern, Error) {
   let prefix = regex_escape(prefix)
   case convert_pattern(pattern) {
     Ok(pattern) -> {
@@ -25,10 +30,10 @@ pub fn from_prefix_and_string(
         regex.Options(case_insensitive: ignore_case, multi_line: False)
       case regex.compile(prefix <> pattern, with: options) {
         Ok(regex) -> Ok(PathPattern(regex:))
-        Error(_) -> Error(Nil)
+        Error(err) -> Error(RegexCompileError(err))
       }
     }
-    Error(_) -> Error(Nil)
+    Error(_) -> Error(OpenBracketError)
   }
 }
 
