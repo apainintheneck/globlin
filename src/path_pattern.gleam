@@ -7,7 +7,7 @@ pub opaque type PathPattern {
 }
 
 pub type Error {
-  OpenBracketError
+  MissingClosingBracketError
   RegexCompileError(context: regex.CompileError)
 }
 
@@ -33,7 +33,7 @@ pub fn from_prefix_and_string(
         Error(err) -> Error(RegexCompileError(err))
       }
     }
-    Error(_) -> Error(OpenBracketError)
+    Error(_) -> Error(MissingClosingBracketError)
   }
 }
 
@@ -80,8 +80,11 @@ fn do_convert_pattern(
   case in_range {
     True -> {
       case graphemes {
+        // Error since we've reached the end with an open char set
         [] -> Error(Nil)
+        // Unescaped closing bracket means the char set is finished
         ["]", ..rest] -> do_convert_pattern(rest, ["]", ..chars], False)
+        // Continue on until we find the closing bracket
         ["\\", second, ..rest] ->
           do_convert_pattern(rest, [escape_meta_char(second), ..chars], True)
         [first, ..rest] -> do_convert_pattern(rest, [first, ..chars], True)
@@ -89,15 +92,24 @@ fn do_convert_pattern(
     }
     False -> {
       case graphemes {
+        // Success
         [] -> chars |> list.reverse |> string.concat |> Ok
+        // Convert "?" which matches any char once to regex format
         ["?", ..rest] -> do_convert_pattern(rest, ["[^/]", ..chars], False)
+        // Convert "**" which matches any char zero or more times including "/" to regex format
         ["*", "*", ..rest] -> do_convert_pattern(rest, [".*", ..chars], False)
+        // Convert "*" which matches any char zero or more times except "/" to regex format
         ["*", ..rest] -> do_convert_pattern(rest, ["[^/]*", ..chars], False)
+        // Match empty brackets literally
         ["[", "]", ..rest] -> do_convert_pattern(rest, ["\\[]", ..chars], False)
+        // Convert "[!" negative char set to regex format
         ["[", "!", ..rest] -> do_convert_pattern(rest, ["[^", ..chars], True)
+        // Convert "[" positive char set to regex format
         ["[", ..rest] -> do_convert_pattern(rest, ["[", ..chars], True)
+        // Escape any chars preceded by a "\" only if necessary
         ["\\", second, ..rest] ->
           do_convert_pattern(rest, [escape_meta_char(second), ..chars], False)
+        // Escape any other chars if necessary
         [first, ..rest] ->
           do_convert_pattern(rest, [escape_meta_char(first), ..chars], False)
       }
