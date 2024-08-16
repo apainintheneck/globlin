@@ -104,6 +104,8 @@ fn do_convert_pattern(
         ["[", "]", ..rest] -> do_convert_pattern(rest, ["\\[]", ..chars], False)
         // Convert "[!" negative char set to regex format
         ["[", "!", ..rest] -> do_convert_pattern(rest, ["[^", ..chars], True)
+        // Convert "[^" positive char set to regex format ("^" has no special meaning here)
+        ["[", "^", ..rest] -> do_convert_pattern(rest, ["[\\^", ..chars], True)
         // Convert "[" positive char set to regex format
         ["[", ..rest] -> do_convert_pattern(rest, ["[", ..chars], True)
         // Escape any chars preceded by a "\" only if necessary
