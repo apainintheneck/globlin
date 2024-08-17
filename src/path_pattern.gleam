@@ -13,6 +13,7 @@ pub type Options {
 const empty_options = Options(ignore_case: False, match_dotfiles: False)
 
 pub type Error {
+  InvalidGlobStarError
   MissingClosingBracketError
   RegexCompileError(context: regex.CompileError)
 }
@@ -42,7 +43,7 @@ pub fn compile(
         Error(err) -> Error(RegexCompileError(err))
       }
     }
-    Error(_) -> Error(MissingClosingBracketError)
+    Error(err) -> Error(err)
   }
 }
 
@@ -54,12 +55,12 @@ fn convert_pattern(
   prefix: String,
   pattern: String,
   options: Options,
-) -> Result(String, Nil) {
+) -> Result(String, Error) {
   let graphemes = string.to_graphemes(pattern)
   let path_chars = [regex_escape(prefix)]
   case do_convert_pattern(graphemes, path_chars, False, options) {
     Ok(regex_pattern) -> Ok("^" <> regex_pattern <> "$")
-    Error(_) -> Error(Nil)
+    Error(err) -> Error(err)
   }
 }
 
@@ -68,12 +69,12 @@ fn do_convert_pattern(
   path_chars: List(String),
   in_range: Bool,
   options: Options,
-) -> Result(String, Nil) {
+) -> Result(String, Error) {
   case in_range {
     True -> {
       case graphemes {
         // Error since we've reached the end with an open char set
-        [] -> Error(Nil)
+        [] -> Error(MissingClosingBracketError)
         // Unescaped closing bracket means the char set is finished
         ["]", ..rest] ->
           do_convert_pattern(rest, ["]", ..path_chars], False, options)
@@ -100,15 +101,16 @@ fn do_convert_pattern(
         }
         // Convert "**" which matches any char zero or more times including "/" to regex format
         ["*", "*", ..rest] -> {
-          let wildcard = case ignore_dotfiles(path_chars, options) {
-            // Match on everything
-            _ if options.match_dotfiles -> ".*"
-            // Start of directory: ignore all dotfiles
-            True -> "(([^.][^/]*)(/[^.][^/]*)*)?"
-            // Middle/end of directory: ignore all dotfiles but match on initial dot
-            False -> "([^/]*(/[^.][^/]*)*)?"
+          case start_of_directory(path_chars) && end_of_directory(rest) {
+            True -> {
+              let wildcard = case options.match_dotfiles {
+                True -> ".*"
+                False -> "([^.][^/]*(/[^.][^/]*)*)?"
+              }
+              do_convert_pattern(rest, [wildcard, ..path_chars], False, options)
+            }
+            False -> Error(InvalidGlobStarError)
           }
-          do_convert_pattern(rest, [wildcard, ..path_chars], False, options)
         }
         // Convert "*" which matches any char zero or more times except "/" to regex format
         ["*", ..rest] -> {
@@ -185,5 +187,12 @@ fn start_of_directory(path_chars: List(String)) -> Bool {
   case path_chars {
     [] | [""] -> True
     [previous, ..] -> string.ends_with(previous, "/")
+  }
+}
+
+fn end_of_directory(graphemes: List(String)) -> Bool {
+  case graphemes {
+    [] | ["/", ..] -> True
+    _ -> False
   }
 }

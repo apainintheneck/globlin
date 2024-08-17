@@ -101,7 +101,7 @@ pub fn case_sensitivity_test() {
 pub fn dotfiles_test() {
   [
     Pair(content: ".secrets.txt", pattern: "*"),
-    Pair(content: "repo/.git", pattern: "**it"),
+    Pair(content: "repo/.git/config", pattern: "repo/**/config"),
     Pair(content: ".vimrc", pattern: "?vim*"),
   ]
   |> list.each(fn(pair) {
@@ -111,7 +111,7 @@ pub fn dotfiles_test() {
 
   [
     Pair(content: "go/pkg/.mod/golang.org/", pattern: "go/*/.mod/*/"),
-    Pair(content: ".vscode/argv.json", pattern: ".vsco**"),
+    Pair(content: ".vscode/argv.json", pattern: ".vscode/**"),
     Pair(content: "/path/README.md", pattern: "/path/README???"),
   ]
   |> list.each(fn(pair) {
