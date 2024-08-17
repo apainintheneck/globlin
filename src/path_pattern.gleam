@@ -34,7 +34,7 @@ pub fn compile(
   with options: Options,
 ) -> Result(PathPattern, Error) {
   let prefix = regex_escape(prefix)
-  case convert_pattern(pattern) {
+  case convert_pattern(pattern, options) {
     Ok(pattern) -> {
       let regex_options =
         regex.Options(case_insensitive: options.ignore_case, multi_line: False)
@@ -77,15 +77,16 @@ fn escape_meta_char(char: String) -> String {
   }
 }
 
-fn convert_pattern(pattern: String) -> Result(String, Nil) {
+fn convert_pattern(pattern: String, options: Options) -> Result(String, Nil) {
   let graphemes = string.to_graphemes(pattern)
-  do_convert_pattern(graphemes, [], False)
+  do_convert_pattern(graphemes, [], False, options)
 }
 
 fn do_convert_pattern(
   graphemes: List(String),
   chars: List(String),
   in_range: Bool,
+  options: Options,
 ) -> Result(String, Nil) {
   case in_range {
     True -> {
@@ -93,11 +94,14 @@ fn do_convert_pattern(
         // Error since we've reached the end with an open char set
         [] -> Error(Nil)
         // Unescaped closing bracket means the char set is finished
-        ["]", ..rest] -> do_convert_pattern(rest, ["]", ..chars], False)
+        ["]", ..rest] ->
+          do_convert_pattern(rest, ["]", ..chars], False, options)
         // Continue on until we find the closing bracket
         ["\\", second, ..rest] ->
-          do_convert_pattern(rest, [escape_meta_char(second), ..chars], True)
-        [first, ..rest] -> do_convert_pattern(rest, [first, ..chars], True)
+          [escape_meta_char(second), ..chars]
+          |> do_convert_pattern(rest, _, True, options)
+        [first, ..rest] ->
+          do_convert_pattern(rest, [first, ..chars], True, options)
       }
     }
     False -> {
@@ -105,26 +109,60 @@ fn do_convert_pattern(
         // Success
         [] -> chars |> list.reverse |> string.concat |> Ok
         // Convert "?" which matches any char once to regex format
-        ["?", ..rest] -> do_convert_pattern(rest, ["[^/]", ..chars], False)
+        ["?", ..rest] -> {
+          let wildcard = case ignore_dotfiles(chars, options) {
+            True -> "[^/.]"
+            False -> "[^/]"
+          }
+          do_convert_pattern(rest, [wildcard, ..chars], False, options)
+        }
         // Convert "**" which matches any char zero or more times including "/" to regex format
-        ["*", "*", ..rest] -> do_convert_pattern(rest, [".*", ..chars], False)
+        ["*", "*", ..rest] -> {
+          let wildcard = case ignore_dotfiles(chars, options) {
+            True -> "([^.].*)?"
+            False -> ".*"
+          }
+          do_convert_pattern(rest, [wildcard, ..chars], False, options)
+        }
         // Convert "*" which matches any char zero or more times except "/" to regex format
-        ["*", ..rest] -> do_convert_pattern(rest, ["[^/]*", ..chars], False)
+        ["*", ..rest] -> {
+          let wildcard = case ignore_dotfiles(chars, options) {
+            True -> "([^.][^/]*)?"
+            False -> "[^/]*"
+          }
+          do_convert_pattern(rest, [wildcard, ..chars], False, options)
+        }
         // Match empty brackets literally
-        ["[", "]", ..rest] -> do_convert_pattern(rest, ["\\[]", ..chars], False)
+        ["[", "]", ..rest] ->
+          do_convert_pattern(rest, ["\\[]", ..chars], False, options)
         // Convert "[!" negative char set to regex format
-        ["[", "!", ..rest] -> do_convert_pattern(rest, ["[^", ..chars], True)
+        ["[", "!", ..rest] ->
+          do_convert_pattern(rest, ["[^", ..chars], True, options)
         // Convert "[^" positive char set to regex format ("^" has no special meaning here)
-        ["[", "^", ..rest] -> do_convert_pattern(rest, ["[\\^", ..chars], True)
+        ["[", "^", ..rest] ->
+          do_convert_pattern(rest, ["[\\^", ..chars], True, options)
         // Convert "[" positive char set to regex format
-        ["[", ..rest] -> do_convert_pattern(rest, ["[", ..chars], True)
+        ["[", ..rest] -> do_convert_pattern(rest, ["[", ..chars], True, options)
         // Escape any chars preceded by a "\" only if necessary
         ["\\", second, ..rest] ->
-          do_convert_pattern(rest, [escape_meta_char(second), ..chars], False)
+          [escape_meta_char(second), ..chars]
+          |> do_convert_pattern(rest, _, False, options)
         // Escape any other chars if necessary
         [first, ..rest] ->
-          do_convert_pattern(rest, [escape_meta_char(first), ..chars], False)
+          [escape_meta_char(first), ..chars]
+          |> do_convert_pattern(rest, _, False, options)
       }
     }
   }
+}
+
+// Both wildcards ignore dotfiles by default unless the `match_dotfiles`
+// option is present. It is also possible to match dotfiles using literal dots
+// char sets or ranges.
+fn ignore_dotfiles(chars: List(String), options: Options) -> Bool {
+  let start_of_directory = case chars {
+    [] | ["/", ..] -> True
+    _ -> False
+  }
+  start_of_directory && !options.match_dotfiles
 }
