@@ -16,12 +16,22 @@ type Pair {
   Pair(content: String, pattern: String)
 }
 
+const empty_options = path_pattern.Options(
+  ignore_case: False,
+  match_dotfiles: False,
+)
+
+const no_case_options = path_pattern.Options(
+  ignore_case: True,
+  match_dotfiles: False,
+)
+
 fn check_pattern(
   pair pair: Pair,
   is_match is_match: Bool,
-  ignore_case ignore_case: Bool,
+  options options: path_pattern.Options,
 ) -> Nil {
-  path_pattern.from_pattern(pattern: pair.pattern, ignore_case: ignore_case)
+  path_pattern.compile(prefix: "", pattern: pair.pattern, with: options)
   |> should.be_ok
   |> path_pattern.check(pair.content)
   |> should.equal(is_match)
@@ -38,14 +48,14 @@ pub fn simple_patterns_test() {
     Pair(content: "abc", pattern: "ab[cd]"),
     Pair(content: "abc", pattern: "ab[!de]"),
   ]
-  |> list.each(check_pattern(pair: _, is_match: True, ignore_case: False))
+  |> list.each(check_pattern(pair: _, is_match: True, options: empty_options))
 
   [
     Pair(content: "abc", pattern: "ab[de]"),
     Pair(content: "a", pattern: "??"),
     Pair(content: "a", pattern: "b"),
   ]
-  |> list.each(check_pattern(pair: _, is_match: False, ignore_case: False))
+  |> list.each(check_pattern(pair: _, is_match: False, options: empty_options))
 }
 
 pub fn paths_with_newlines_test() {
@@ -55,7 +65,7 @@ pub fn paths_with_newlines_test() {
     Pair("\nfoo", "foo*"),
     Pair("\n", "*"),
   ]
-  |> list.each(check_pattern(pair: _, is_match: True, ignore_case: False))
+  |> list.each(check_pattern(pair: _, is_match: True, options: empty_options))
 }
 
 pub fn slow_patterns_test() {
@@ -66,19 +76,19 @@ pub fn slow_patterns_test() {
       pattern: "*a*a*a*a*a*a*a*a*a*a",
     ),
   ]
-  |> list.each(check_pattern(pair: _, is_match: True, ignore_case: False))
+  |> list.each(check_pattern(pair: _, is_match: True, options: empty_options))
 }
 
 pub fn case_sensitivity_test() {
   [Pair("abc", "abc"), Pair("AbC", "AbC")]
   |> list.each(fn(pair) {
-    check_pattern(pair: pair, is_match: True, ignore_case: False)
-    check_pattern(pair: pair, is_match: True, ignore_case: True)
+    check_pattern(pair: pair, is_match: True, options: empty_options)
+    check_pattern(pair: pair, is_match: True, options: no_case_options)
   })
 
   [Pair("AbC", "abc"), Pair("abc", "AbC")]
   |> list.each(fn(pair) {
-    check_pattern(pair: pair, is_match: False, ignore_case: False)
-    check_pattern(pair: pair, is_match: True, ignore_case: True)
+    check_pattern(pair: pair, is_match: False, options: empty_options)
+    check_pattern(pair: pair, is_match: True, options: no_case_options)
   })
 }

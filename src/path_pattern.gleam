@@ -3,33 +3,43 @@ import gleam/regex
 import gleam/string
 
 pub opaque type PathPattern {
-  PathPattern(regex: regex.Regex)
+  PathPattern(regex: regex.Regex, options: Options)
 }
+
+pub type Options {
+  Options(ignore_case: Bool, match_dotfiles: Bool)
+}
+
+const empty_options = Options(ignore_case: False, match_dotfiles: False)
 
 pub type Error {
   MissingClosingBracketError
   RegexCompileError(context: regex.CompileError)
 }
 
-pub fn from_pattern(
-  pattern pattern: String,
-  ignore_case ignore_case: Bool,
-) -> Result(PathPattern, Error) {
-  from_prefix_and_string("", pattern, ignore_case)
+pub fn from_pattern(pattern pattern: String) -> Result(PathPattern, Error) {
+  compile(prefix: "", pattern:, with: empty_options)
 }
 
-pub fn from_prefix_and_string(
+pub fn from_prefix_and_pattern(
   prefix prefix: String,
   pattern pattern: String,
-  ignore_case ignore_case: Bool,
+) -> Result(PathPattern, Error) {
+  compile(prefix:, pattern:, with: empty_options)
+}
+
+pub fn compile(
+  prefix prefix: String,
+  pattern pattern: String,
+  with options: Options,
 ) -> Result(PathPattern, Error) {
   let prefix = regex_escape(prefix)
   case convert_pattern(pattern) {
     Ok(pattern) -> {
-      let options =
-        regex.Options(case_insensitive: ignore_case, multi_line: False)
-      case regex.compile(prefix <> pattern, with: options) {
-        Ok(regex) -> Ok(PathPattern(regex:))
+      let regex_options =
+        regex.Options(case_insensitive: options.ignore_case, multi_line: False)
+      case regex.compile(prefix <> pattern, with: regex_options) {
+        Ok(regex) -> Ok(PathPattern(regex:, options:))
         Error(err) -> Error(RegexCompileError(err))
       }
     }
