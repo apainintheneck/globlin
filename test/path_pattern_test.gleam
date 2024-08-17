@@ -26,6 +26,11 @@ const no_case_options = path_pattern.Options(
   match_dotfiles: False,
 )
 
+const with_dots_options = path_pattern.Options(
+  ignore_case: False,
+  match_dotfiles: True,
+)
+
 fn check_pattern(
   pair pair: Pair,
   is_match is_match: Bool,
@@ -60,10 +65,10 @@ pub fn simple_patterns_test() {
 
 pub fn paths_with_newlines_test() {
   [
-    Pair("foo\nbar", "foo*"),
-    Pair("foo\nbar\n", "foo*"),
-    Pair("\nfoo", "foo*"),
-    Pair("\n", "*"),
+    Pair(content: "foo\nbar", pattern: "foo*"),
+    Pair(content: "foo\nbar\n", pattern: "foo*"),
+    Pair(content: "\nfoo", pattern: "\nfoo*"),
+    Pair(content: "\n", pattern: "*"),
   ]
   |> list.each(check_pattern(pair: _, is_match: True, options: empty_options))
 }
@@ -73,22 +78,44 @@ pub fn slow_patterns_test() {
     Pair(content: string.repeat("a", 50), pattern: "*a*a*a*a*a*a*a*a*a*a"),
     Pair(
       content: string.repeat("a", 50) <> "b",
-      pattern: "*a*a*a*a*a*a*a*a*a*a",
+      pattern: "*a*a*a*a*a*a*a*a*a*ab",
     ),
   ]
   |> list.each(check_pattern(pair: _, is_match: True, options: empty_options))
 }
 
 pub fn case_sensitivity_test() {
-  [Pair("abc", "abc"), Pair("AbC", "AbC")]
+  [Pair(content: "abc", pattern: "abc"), Pair(content: "AbC", pattern: "AbC")]
   |> list.each(fn(pair) {
     check_pattern(pair: pair, is_match: True, options: empty_options)
     check_pattern(pair: pair, is_match: True, options: no_case_options)
   })
 
-  [Pair("AbC", "abc"), Pair("abc", "AbC")]
+  [Pair(content: "AbC", pattern: "abc"), Pair(content: "abc", pattern: "AbC")]
   |> list.each(fn(pair) {
     check_pattern(pair: pair, is_match: False, options: empty_options)
     check_pattern(pair: pair, is_match: True, options: no_case_options)
+  })
+}
+
+pub fn dotfiles_test() {
+  [
+    Pair(content: ".secrets.txt", pattern: "*"),
+    Pair(content: "repo/.git", pattern: "**it"),
+    Pair(content: ".vimrc", pattern: "?vim*"),
+  ]
+  |> list.each(fn(pair) {
+    check_pattern(pair: pair, is_match: False, options: empty_options)
+    check_pattern(pair: pair, is_match: True, options: with_dots_options)
+  })
+
+  [
+    Pair(content: "go/pkg/.mod/golang.org/", pattern: "go/*/.mod/*/"),
+    Pair(content: ".vscode/argv.json", pattern: ".vsco**"),
+    Pair(content: "/path/README.md", pattern: "/path/README???"),
+  ]
+  |> list.each(fn(pair) {
+    check_pattern(pair: pair, is_match: True, options: empty_options)
+    check_pattern(pair: pair, is_match: True, options: with_dots_options)
   })
 }
