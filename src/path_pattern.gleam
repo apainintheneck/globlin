@@ -82,7 +82,8 @@ fn do_convert_pattern(
           [escape_meta_char(second), ..path_chars]
           |> do_convert_pattern(rest, _, True, options)
         [first, ..rest] ->
-          do_convert_pattern(rest, [first, ..path_chars], True, options)
+          [escape_meta_char(first), ..path_chars]
+          |> do_convert_pattern(rest, _, True, options)
       }
     }
     False -> {
@@ -119,7 +120,7 @@ fn do_convert_pattern(
         }
         // Match empty brackets literally
         ["[", "]", ..rest] ->
-          do_convert_pattern(rest, ["\\[]", ..path_chars], False, options)
+          do_convert_pattern(rest, ["\\[\\]", ..path_chars], False, options)
         // Convert "[!" negative char set to regex format
         ["[", "!", ..rest] ->
           do_convert_pattern(rest, ["[^", ..path_chars], True, options)
@@ -149,9 +150,10 @@ fn regex_escape(content: String) -> String {
   |> string.concat
 }
 
-// See https://www.erlang.org/doc/apps/stdlib/re.html#module-characters-and-metacharacters
 fn escape_meta_char(char: String) -> String {
   case char {
+    // Erlang: Metacharacters need to be escaped to avoid unexpected matching.
+    // See https://www.erlang.org/doc/apps/stdlib/re.html#module-characters-and-metacharacters
     "\\" -> "\\\\"
     "^" -> "\\^"
     "$" -> "\\$"
@@ -164,6 +166,10 @@ fn escape_meta_char(char: String) -> String {
     "*" -> "\\*"
     "+" -> "\\+"
     "{" -> "\\{"
+    // JS: In unicode aware mode these need to be escaped explicitly.
+    // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Regex_raw_bracket
+    "]" -> "\\]"
+    "}" -> "\\}"
     _ -> char
   }
 }

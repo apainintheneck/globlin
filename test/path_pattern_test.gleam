@@ -127,3 +127,18 @@ pub fn invalid_pattern_test() {
     |> should.equal(Error(path_pattern.MissingClosingBracketError))
   })
 }
+
+// In unicode aware mode these need to be escaped explicitly.
+// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Regex_raw_bracket
+pub fn raw_brackets_test() {
+  [
+    // Escaped
+    "]", "[[[]]]", "[]]]]", "{", "}", "{{{}}}", "{}}}",
+    // Not escaped
+    "(", ")", "((()))", "()))", "<", ">", "<<<>>>", "<>>>",
+  ]
+  |> list.each(fn(pattern) {
+    path_pattern.from_pattern(pattern)
+    |> should.be_ok
+  })
+}
