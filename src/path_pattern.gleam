@@ -17,11 +17,11 @@ pub type Error {
   RegexCompileError(context: regex.CompileError)
 }
 
-pub fn from_pattern(pattern pattern: String) -> Result(PathPattern, Error) {
+pub fn for_pattern(pattern pattern: String) -> Result(PathPattern, Error) {
   compile(prefix: "", pattern:, with: empty_options)
 }
 
-pub fn from_pattern_with_prefix(
+pub fn for_pattern_from_prefix(
   pattern pattern: String,
   prefix prefix: String,
 ) -> Result(PathPattern, Error) {

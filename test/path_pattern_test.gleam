@@ -123,7 +123,7 @@ pub fn dotfiles_test() {
 pub fn invalid_pattern_test() {
   ["[", "abc[def", "abc[def\\]g", "]]]][[]["]
   |> list.each(fn(pattern) {
-    path_pattern.from_pattern(pattern)
+    path_pattern.for_pattern(pattern)
     |> should.equal(Error(path_pattern.MissingClosingBracketError))
   })
 }
@@ -138,7 +138,7 @@ pub fn raw_brackets_test() {
     "(", ")", "((()))", "()))", "<", ">", "<<<>>>", "<>>>",
   ]
   |> list.each(fn(pattern) {
-    path_pattern.from_pattern(pattern)
+    path_pattern.for_pattern(pattern)
     |> should.be_ok
   })
 }
