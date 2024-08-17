@@ -57,7 +57,7 @@ fn convert_pattern(
   options: Options,
 ) -> Result(String, Error) {
   let graphemes = string.to_graphemes(pattern)
-  let path_chars = [regex_escape(prefix)]
+  let path_chars = regex_escape(prefix) |> string.to_graphemes |> list.reverse
   case do_convert_pattern(graphemes, path_chars, False, options) {
     Ok(regex_pattern) -> Ok("^" <> regex_pattern <> "$")
     Error(err) -> Error(err)
@@ -117,31 +117,42 @@ fn do_convert_pattern(
         }
         // Convert "**" to regex format
         ["*", "*", ..rest] -> {
-          case start_of_directory(path_chars) {
-            True -> {
-              case rest {
-                // Isolated or postfix "**" matches zero or more directories or files
-                [] -> {
-                  let wildcard = case options.match_dotfiles {
-                    True -> ".*"
-                    False -> "([^.][^/]*(/[^.][^/]*)*)?"
-                  }
-                  let path_chars = [wildcard, ..path_chars]
-                  do_convert_pattern(rest, path_chars, False, options)
-                }
-                // Prefix or infix "**" matches zero or more directories
-                ["/", ..rest] -> {
-                  let wildcard = case options.match_dotfiles {
-                    True -> "(.*/)?"
-                    False -> "([^.][^/]*/)*"
-                  }
-                  let path_chars = [wildcard, ..path_chars]
-                  do_convert_pattern(rest, path_chars, False, options)
-                }
-                _ -> Error(InvalidGlobStarError)
+          case path_chars, rest {
+            // Isolated "**" matches zero or more directories or files
+            //
+            // Isolated example: "**"
+            [], [] -> {
+              let wildcard = case options.match_dotfiles {
+                True -> ".*"
+                False -> "([^.][^/]*(/[^.][^/]*)*)?"
               }
+              let path_chars = [wildcard, ..path_chars]
+              do_convert_pattern(rest, path_chars, False, options)
             }
-            False -> Error(InvalidGlobStarError)
+            // Postfix "**" matches zero or more directories or files
+            //
+            // Postfix example: "filler/**"
+            ["/", ..path_chars], [] -> {
+              let wildcard = case options.match_dotfiles {
+                True -> "(/.*)?"
+                False -> "(/[^.][^/]*)*"
+              }
+              let path_chars = [wildcard, ..path_chars]
+              do_convert_pattern(rest, path_chars, False, options)
+            }
+            // Prefix or infix "**" matches zero or more directories
+            //
+            // Prefix example: "**/filler"
+            // Infix example: "filler/**/filler"
+            [], ["/", ..rest] | ["/", ..], ["/", ..rest] -> {
+              let wildcard = case options.match_dotfiles {
+                True -> "(.*/)?"
+                False -> "([^.][^/]*/)*"
+              }
+              let path_chars = [wildcard, ..path_chars]
+              do_convert_pattern(rest, path_chars, False, options)
+            }
+            _, _ -> Error(InvalidGlobStarError)
           }
         }
         // Convert "*" which matches any char zero or more times except "/" to regex format

@@ -121,7 +121,10 @@ pub fn dotfiles_test() {
 }
 
 pub fn globstar_test() {
-  ["**", "**/ghi", "**/def/**", "**/def/ghi", "abc/**", "abc/def/**"]
+  [
+    "**", "**/ghi", "**/def/**", "**/def/ghi", "abc/**", "abc/def/**",
+    "**/abc/def/ghi", "abc/def/ghi/**",
+  ]
   |> list.each(fn(pattern) {
     let pair = Pair(content: "abc/def/ghi", pattern:)
     check_pattern(pair:, is_match: True, options: empty_options)
