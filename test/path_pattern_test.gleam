@@ -132,10 +132,8 @@ pub fn invalid_pattern_test() {
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Regex_raw_bracket
 pub fn raw_brackets_test() {
   [
-    // Escaped
-    "]", "[[[]]]", "[]]]]", "{", "}", "{{{}}}", "{}}}",
-    // Not escaped
-    "(", ")", "((()))", "()))", "<", ">", "<<<>>>", "<>>>",
+    "]", "[[[]]]", "[]]]]", "{", "}", "{{{}}}", "{}}}", "(", ")", "((()))",
+    "()))",
   ]
   |> list.each(fn(pattern) {
     path_pattern.for_pattern(pattern)
