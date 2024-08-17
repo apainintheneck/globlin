@@ -151,7 +151,7 @@ pub fn invalid_pattern_test() {
   })
 }
 
-// In unicode aware mode these need to be escaped explicitly.
+// JS: In unicode aware mode these need to be escaped explicitly.
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Regex_raw_bracket
 pub fn raw_brackets_test() {
   [
