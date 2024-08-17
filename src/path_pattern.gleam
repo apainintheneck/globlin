@@ -50,32 +50,6 @@ pub fn check(with pattern: PathPattern, path path: String) -> Bool {
   regex.check(with: pattern.regex, content: path)
 }
 
-fn regex_escape(content: String) -> String {
-  content
-  |> string.to_graphemes
-  |> list.map(escape_meta_char)
-  |> string.concat
-}
-
-// See https://www.erlang.org/doc/apps/stdlib/re.html#module-characters-and-metacharacters
-fn escape_meta_char(char: String) -> String {
-  case char {
-    "\\" -> "\\\\"
-    "^" -> "\\^"
-    "$" -> "\\$"
-    "." -> "\\."
-    "[" -> "\\["
-    "|" -> "\\|"
-    "(" -> "\\("
-    ")" -> "\\)"
-    "?" -> "\\?"
-    "*" -> "\\*"
-    "+" -> "\\+"
-    "{" -> "\\{"
-    _ -> char
-  }
-}
-
 fn convert_pattern(
   prefix: String,
   pattern: String,
@@ -165,6 +139,32 @@ fn do_convert_pattern(
           |> do_convert_pattern(rest, _, False, options)
       }
     }
+  }
+}
+
+fn regex_escape(content: String) -> String {
+  content
+  |> string.to_graphemes
+  |> list.map(escape_meta_char)
+  |> string.concat
+}
+
+// See https://www.erlang.org/doc/apps/stdlib/re.html#module-characters-and-metacharacters
+fn escape_meta_char(char: String) -> String {
+  case char {
+    "\\" -> "\\\\"
+    "^" -> "\\^"
+    "$" -> "\\$"
+    "." -> "\\."
+    "[" -> "\\["
+    "|" -> "\\|"
+    "(" -> "\\("
+    ")" -> "\\)"
+    "?" -> "\\?"
+    "*" -> "\\*"
+    "+" -> "\\+"
+    "{" -> "\\{"
+    _ -> char
   }
 }
 
