@@ -21,9 +21,9 @@ pub fn from_pattern(pattern pattern: String) -> Result(PathPattern, Error) {
   compile(prefix: "", pattern:, with: empty_options)
 }
 
-pub fn from_prefix_and_pattern(
-  prefix prefix: String,
+pub fn from_pattern_with_prefix(
   pattern pattern: String,
+  prefix prefix: String,
 ) -> Result(PathPattern, Error) {
   compile(prefix:, pattern:, with: empty_options)
 }

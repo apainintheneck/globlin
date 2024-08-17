@@ -119,3 +119,11 @@ pub fn dotfiles_test() {
     check_pattern(pair: pair, is_match: True, options: with_dots_options)
   })
 }
+
+pub fn invalid_pattern_test() {
+  ["[", "abc[def", "abc[def\\]g", "]]]][[]["]
+  |> list.each(fn(pattern) {
+    path_pattern.from_pattern(pattern)
+    |> should.equal(Error(path_pattern.MissingClosingBracketError))
+  })
+}
