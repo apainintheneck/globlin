@@ -57,7 +57,8 @@ fn convert_pattern(
   options: Options,
 ) -> Result(String, Error) {
   let graphemes = string.to_graphemes(pattern)
-  let path_chars = regex_escape(prefix) |> string.to_graphemes |> list.reverse
+  let path_chars =
+    prefix |> string.to_graphemes |> list.map(escape_meta_char) |> list.reverse
   case do_convert_pattern(graphemes, path_chars, False, options) {
     Ok(regex_pattern) -> Ok("^" <> regex_pattern <> "$")
     Error(err) -> Error(err)
@@ -169,13 +170,6 @@ fn do_convert_pattern(
       }
     }
   }
-}
-
-fn regex_escape(content: String) -> String {
-  content
-  |> string.to_graphemes
-  |> list.map(escape_meta_char)
-  |> string.concat
 }
 
 fn escape_meta_char(char: String) -> String {
