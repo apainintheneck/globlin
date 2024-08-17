@@ -120,7 +120,7 @@ fn do_convert_pattern(
           case path_chars, rest {
             // Isolated "**" matches zero or more directories or files
             //
-            // Isolated example: "**"
+            // Example: "**"
             [], [] -> {
               let wildcard = case options.match_dotfiles {
                 True -> ".*"
@@ -131,7 +131,7 @@ fn do_convert_pattern(
             }
             // Postfix "**" matches zero or more directories or files
             //
-            // Postfix example: "filler/**"
+            // Example: "filler/**"
             ["/", ..path_chars], [] -> {
               let wildcard = case options.match_dotfiles {
                 True -> "(/.*)?"
@@ -142,8 +142,7 @@ fn do_convert_pattern(
             }
             // Prefix or infix "**" matches zero or more directories
             //
-            // Prefix example: "**/filler"
-            // Infix example: "filler/**/filler"
+            // Examples: "**/filler" or "filler/**/filler"
             [], ["/", ..rest] | ["/", ..], ["/", ..rest] -> {
               let wildcard = case options.match_dotfiles {
                 True -> "(.*/)?"
