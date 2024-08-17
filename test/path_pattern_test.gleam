@@ -120,11 +120,27 @@ pub fn dotfiles_test() {
   })
 }
 
+pub fn globstar_test() {
+  let content = "abc/def/ghi"
+
+  ["**", "**/ghi", "**/def/**", "**/def/ghi", "abc/**", "abc/def/**"]
+  |> list.each(fn(pattern) {
+    let pair = Pair(content:, pattern:)
+    check_pattern(pair:, is_match: True, options: empty_options)
+  })
+}
+
 pub fn invalid_pattern_test() {
   ["[", "abc[def", "abc[def\\]g", "]]]][[]["]
   |> list.each(fn(pattern) {
     path_pattern.for_pattern(pattern)
     |> should.equal(Error(path_pattern.MissingClosingBracketError))
+  })
+
+  ["ab**cd", "one/two**/three", "four/**five/six", "**seven", "eight**"]
+  |> list.each(fn(pattern) {
+    path_pattern.for_pattern(pattern)
+    |> should.equal(Error(path_pattern.InvalidGlobStarError))
   })
 }
 

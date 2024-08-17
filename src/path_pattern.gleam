@@ -99,7 +99,8 @@ fn do_convert_pattern(
           }
           do_convert_pattern(rest, [wildcard, ..path_chars], False, options)
         }
-        // Convert "**" which matches any char zero or more times including "/" to regex format
+        // Convert "**" which matches a series of one or more directories
+        // or any files if placed at the end of the pattern.
         ["*", "*", ..rest] -> {
           case start_of_directory(path_chars) && end_of_directory(rest) {
             True -> {
@@ -176,7 +177,7 @@ fn escape_meta_char(char: String) -> String {
   }
 }
 
-// Both wildcards ignore dotfiles by default unless the `match_dotfiles`
+// All wildcards ignore dotfiles by default unless the `match_dotfiles`
 // option is present. It is also possible to match dotfiles using literal dots
 // char sets or ranges.
 fn ignore_dotfiles(path_chars: List(String), options: Options) -> Bool {
