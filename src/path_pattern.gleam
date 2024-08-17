@@ -91,36 +91,6 @@ fn do_convert_pattern(
       case graphemes {
         // Success
         [] -> path_chars |> list.reverse |> string.concat |> Ok
-        // Convert "?" which matches any char once to regex format
-        ["?", ..rest] -> {
-          let wildcard = case ignore_dotfiles(path_chars, options) {
-            True -> "[^/.]"
-            False -> "[^/]"
-          }
-          do_convert_pattern(rest, [wildcard, ..path_chars], False, options)
-        }
-        // Convert "**" which matches a series of one or more directories
-        // or any files if placed at the end of the pattern.
-        ["*", "*", ..rest] -> {
-          case start_of_directory(path_chars) && end_of_directory(rest) {
-            True -> {
-              let wildcard = case options.match_dotfiles {
-                True -> ".*"
-                False -> "([^.][^/]*(/[^.][^/]*)*)?"
-              }
-              do_convert_pattern(rest, [wildcard, ..path_chars], False, options)
-            }
-            False -> Error(InvalidGlobStarError)
-          }
-        }
-        // Convert "*" which matches any char zero or more times except "/" to regex format
-        ["*", ..rest] -> {
-          let wildcard = case ignore_dotfiles(path_chars, options) {
-            True -> "([^.][^/]*)?"
-            False -> "[^/]*"
-          }
-          do_convert_pattern(rest, [wildcard, ..path_chars], False, options)
-        }
         // Match empty brackets literally
         ["[", "]", ..rest] ->
           do_convert_pattern(rest, ["\\[\\]", ..path_chars], False, options)
@@ -137,6 +107,51 @@ fn do_convert_pattern(
         ["\\", second, ..rest] ->
           [escape_meta_char(second), ..path_chars]
           |> do_convert_pattern(rest, _, False, options)
+        // Convert "?" which matches any char once to regex format
+        ["?", ..rest] -> {
+          let wildcard = case ignore_dotfiles(path_chars, options) {
+            True -> "[^/.]"
+            False -> "[^/]"
+          }
+          do_convert_pattern(rest, [wildcard, ..path_chars], False, options)
+        }
+        // Convert "**" to regex format
+        ["*", "*", ..rest] -> {
+          case start_of_directory(path_chars) {
+            True -> {
+              case rest {
+                // Isolated or postfix "**" matches zero or more directories or files
+                [] -> {
+                  let wildcard = case options.match_dotfiles {
+                    True -> ".*"
+                    False -> "([^.][^/]*(/[^.][^/]*)*)?"
+                  }
+                  let path_chars = [wildcard, ..path_chars]
+                  do_convert_pattern(rest, path_chars, False, options)
+                }
+                // Prefix or infix "**" matches zero or more directories
+                ["/", ..rest] -> {
+                  let wildcard = case options.match_dotfiles {
+                    True -> "(.*/)?"
+                    False -> "([^.][^/]*/)*"
+                  }
+                  let path_chars = [wildcard, ..path_chars]
+                  do_convert_pattern(rest, path_chars, False, options)
+                }
+                _ -> Error(InvalidGlobStarError)
+              }
+            }
+            False -> Error(InvalidGlobStarError)
+          }
+        }
+        // Convert "*" which matches any char zero or more times except "/" to regex format
+        ["*", ..rest] -> {
+          let wildcard = case ignore_dotfiles(path_chars, options) {
+            True -> "([^.][^/]*)?"
+            False -> "[^/]*"
+          }
+          do_convert_pattern(rest, [wildcard, ..path_chars], False, options)
+        }
         // Escape any other path chars if necessary
         [first, ..rest] ->
           [escape_meta_char(first), ..path_chars]
@@ -188,12 +203,5 @@ fn start_of_directory(path_chars: List(String)) -> Bool {
   case path_chars {
     [] | [""] -> True
     [previous, ..] -> string.ends_with(previous, "/")
-  }
-}
-
-fn end_of_directory(graphemes: List(String)) -> Bool {
-  case graphemes {
-    [] | ["/", ..] -> True
-    _ -> False
   }
 }

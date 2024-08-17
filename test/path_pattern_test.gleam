@@ -121,11 +121,18 @@ pub fn dotfiles_test() {
 }
 
 pub fn globstar_test() {
-  let content = "abc/def/ghi"
-
   ["**", "**/ghi", "**/def/**", "**/def/ghi", "abc/**", "abc/def/**"]
   |> list.each(fn(pattern) {
-    let pair = Pair(content:, pattern:)
+    let pair = Pair(content: "abc/def/ghi", pattern:)
+    check_pattern(pair:, is_match: True, options: empty_options)
+  })
+
+  [
+    "hello_world.gleam", "hello.world.gleam", "hello/world.gleam",
+    "he.llo/wo.rld.gleam",
+  ]
+  |> list.each(fn(content) {
+    let pair = Pair(content:, pattern: "**/*.gleam")
     check_pattern(pair:, is_match: True, options: empty_options)
   })
 }
