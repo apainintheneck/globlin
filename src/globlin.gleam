@@ -3,21 +3,20 @@ import gleam/regex
 import gleam/string
 
 /// Each path pattern holds a compiled regex and options.
-pub opaque type PathPattern {
-  PathPattern(regex: regex.Regex, options: Options)
+pub opaque type Pattern {
+  Pattern(regex: regex.Regex, options: PatternOptions)
 }
 
-/// Options that can be provided to the `compile` method.
+/// Options that can be provided to the `new_pattern_with` method.
 ///
 /// - ignore_case: All matching is case insensitive (Default: False)
 /// - match_dotfiles: Match dotfiles when using wildcards (Default: False)
-pub type Options {
-  Options(ignore_case: Bool, match_dotfiles: Bool)
+pub type PatternOptions {
+  PatternOptions(ignore_case: Bool, match_dotfiles: Bool)
 }
 
-const empty_options = Options(ignore_case: False, match_dotfiles: False)
+const empty_options = PatternOptions(ignore_case: False, match_dotfiles: False)
 
-/// Errors:
 /// - AbsolutePatternFromDirError
 ///   - The pattern must NOT start with a slash if compiled with a directory prefix.
 /// - InvalidGlobStarError
@@ -27,39 +26,31 @@ const empty_options = Options(ignore_case: False, match_dotfiles: False)
 /// - RegexCompileError
 ///   - Error propogated from the `gleam/regex` library.
 ///   - This should NEVER happen so let me know if you ever see this.
-pub type Error {
+pub type PatternError {
   AbsolutePatternFromDirError
   InvalidGlobStarError
   MissingClosingBracketError
   RegexCompileError(context: regex.CompileError)
 }
 
-/// Compile a `PathPattern` from a pattern.
-pub fn for_pattern(pattern pattern: String) -> Result(PathPattern, Error) {
-  compile(directory: "", pattern:, with: empty_options)
+/// Compile a `Pattern` from a pattern.
+pub fn new_pattern(pattern: String) -> Result(Pattern, PatternError) {
+  new_pattern_with(pattern, from: "", with: empty_options)
 }
 
-/// Compile a `PathPattern` from a pattern and a directory prefix.
-pub fn for_pattern_from_directory(
-  pattern pattern: String,
-  directory directory: String,
-) -> Result(PathPattern, Error) {
-  compile(directory:, pattern:, with: empty_options)
-}
-
-/// Compile a `PathPattern` from a directory, pattern and options. Leave the
-/// directory blank if it's not needed and it will be ignored.
-pub fn compile(
-  directory directory: String,
-  pattern pattern: String,
-  with options: Options,
-) -> Result(PathPattern, Error) {
+/// Compile a `Pattern` from a directory, pattern and options.
+/// The directory is escaped and prefixed before the pattern.
+pub fn new_pattern_with(
+  pattern: String,
+  from directory: String,
+  with options: PatternOptions,
+) -> Result(Pattern, PatternError) {
   case convert_pattern(directory, pattern, options) {
     Ok(pattern) -> {
       let regex_options =
         regex.Options(case_insensitive: options.ignore_case, multi_line: False)
       case regex.compile(pattern, with: regex_options) {
-        Ok(regex) -> Ok(PathPattern(regex:, options:))
+        Ok(regex) -> Ok(Pattern(regex:, options:))
         Error(err) -> Error(RegexCompileError(err))
       }
     }
@@ -68,7 +59,7 @@ pub fn compile(
 }
 
 /// Compare a path pattern against a path to see if they match.
-pub fn check(with pattern: PathPattern, path path: String) -> Bool {
+pub fn match_pattern(pattern pattern: Pattern, path path: String) -> Bool {
   regex.check(with: pattern.regex, content: path)
 }
 
@@ -76,8 +67,8 @@ pub fn check(with pattern: PathPattern, path path: String) -> Bool {
 fn convert_pattern(
   prefix: String,
   pattern: String,
-  options: Options,
-) -> Result(String, Error) {
+  options: PatternOptions,
+) -> Result(String, PatternError) {
   let graphemes = string.to_graphemes(pattern)
   let path_chars = parse_path_chars(prefix)
 
@@ -115,8 +106,8 @@ fn do_convert_pattern(
   graphemes: List(String),
   path_chars: List(String),
   in_range: Bool,
-  options: Options,
-) -> Result(String, Error) {
+  options: PatternOptions,
+) -> Result(String, PatternError) {
   case in_range {
     True -> {
       case graphemes {
@@ -246,7 +237,7 @@ fn escape_meta_char(char: String) -> String {
 // All wildcards ignore dotfiles by default unless the `match_dotfiles`
 // option is present. It is also possible to match dotfiles using literal dots,
 // char sets or ranges.
-fn ignore_dotfiles(path_chars: List(String), options: Options) -> Bool {
+fn ignore_dotfiles(path_chars: List(String), options: PatternOptions) -> Bool {
   !options.match_dotfiles && start_of_directory(path_chars)
 }
 
