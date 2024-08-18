@@ -36,7 +36,7 @@ fn check_pattern(
   is_match is_match: Bool,
   options options: path_pattern.Options,
 ) -> Nil {
-  path_pattern.compile(prefix: "", pattern: pair.pattern, with: options)
+  path_pattern.compile(directory: "", pattern: pair.pattern, with: options)
   |> should.be_ok
   |> path_pattern.check(pair.content)
   |> should.equal(is_match)
@@ -140,6 +140,19 @@ pub fn globstar_test() {
   })
 }
 
+pub fn from_directory_test() {
+  ["/home/", "/home"]
+  |> list.each(fn(directory) {
+    path_pattern.for_pattern_from_directory(
+      pattern: "documents/**/img_*.png",
+      directory:,
+    )
+    |> should.be_ok
+    |> path_pattern.check(path: "/home/documents/mallorca_2012/img_beach.png")
+    |> should.be_true
+  })
+}
+
 pub fn invalid_pattern_test() {
   ["[", "abc[def", "abc[def\\]g", "]]]][[]["]
   |> list.each(fn(pattern) {
@@ -152,6 +165,12 @@ pub fn invalid_pattern_test() {
     path_pattern.for_pattern(pattern)
     |> should.equal(Error(path_pattern.InvalidGlobStarError))
   })
+
+  path_pattern.for_pattern_from_directory(
+    pattern: "/**/*.json",
+    directory: "/home",
+  )
+  |> should.equal(Error(path_pattern.AbsolutePatternFromDirError))
 }
 
 // JS: In unicode aware mode these need to be escaped explicitly.

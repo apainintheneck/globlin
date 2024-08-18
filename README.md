@@ -21,7 +21,6 @@ pub fn main() {
   |> list.filter(path_pattern.check(with: matcher, path: _))
   |> list.each(io.debug)
 }
-
 ```
 
 Further documentation can be found at <https://hexdocs.pm/path_pattern>.

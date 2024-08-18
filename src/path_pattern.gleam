@@ -13,28 +13,29 @@ pub type Options {
 const empty_options = Options(ignore_case: False, match_dotfiles: False)
 
 pub type Error {
+  AbsolutePatternFromDirError
   InvalidGlobStarError
   MissingClosingBracketError
   RegexCompileError(context: regex.CompileError)
 }
 
 pub fn for_pattern(pattern pattern: String) -> Result(PathPattern, Error) {
-  compile(prefix: "", pattern:, with: empty_options)
+  compile(directory: "", pattern:, with: empty_options)
 }
 
-pub fn for_pattern_from_prefix(
+pub fn for_pattern_from_directory(
   pattern pattern: String,
-  prefix prefix: String,
+  directory directory: String,
 ) -> Result(PathPattern, Error) {
-  compile(prefix:, pattern:, with: empty_options)
+  compile(directory:, pattern:, with: empty_options)
 }
 
 pub fn compile(
-  prefix prefix: String,
+  directory directory: String,
   pattern pattern: String,
   with options: Options,
 ) -> Result(PathPattern, Error) {
-  case convert_pattern(prefix, pattern, options) {
+  case convert_pattern(directory, pattern, options) {
     Ok(pattern) -> {
       let regex_options =
         regex.Options(case_insensitive: options.ignore_case, multi_line: False)
@@ -57,11 +58,29 @@ fn convert_pattern(
   options: Options,
 ) -> Result(String, Error) {
   let graphemes = string.to_graphemes(pattern)
-  let path_chars =
-    prefix |> string.to_graphemes |> list.map(escape_meta_char) |> list.reverse
-  case do_convert_pattern(graphemes, path_chars, False, options) {
-    Ok(regex_pattern) -> Ok("^" <> regex_pattern <> "$")
-    Error(err) -> Error(err)
+  let path_chars = parse_path_chars(prefix)
+
+  case graphemes, path_chars {
+    ["/", ..], [_, ..] -> Error(AbsolutePatternFromDirError)
+    _, _ -> {
+      case do_convert_pattern(graphemes, path_chars, False, options) {
+        Ok(regex_pattern) -> Ok("^" <> regex_pattern <> "$")
+        Error(err) -> Error(err)
+      }
+    }
+  }
+}
+
+fn parse_path_chars(prefix: String) -> List(String) {
+  prefix
+  |> string.to_graphemes
+  |> list.map(escape_meta_char)
+  |> list.reverse
+  |> fn(path_chars) {
+    case path_chars {
+      [] | ["/", ..] -> path_chars
+      _ -> ["/", ..path_chars]
+    }
   }
 }
 
