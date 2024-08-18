@@ -1,6 +1,7 @@
 import gleam/list
 import gleam/regex
 import gleam/string
+import simplifile
 
 /// Each path pattern holds a compiled regex and options.
 pub opaque type Pattern {
@@ -61,6 +62,30 @@ pub fn new_pattern_with(
 /// Compare a path pattern against a path to see if they match.
 pub fn match_pattern(pattern pattern: Pattern, path path: String) -> Bool {
   regex.check(with: pattern.regex, content: path)
+}
+
+/// An alias for `simplifile.FileError` needed for the glob methods below.
+pub type FileError =
+  simplifile.FileError
+
+/// Glob files from the current working directory.
+pub fn glob(pattern: Pattern) -> Result(List(String), FileError) {
+  case simplifile.current_directory() {
+    Ok(directory) -> glob_from(pattern:, directory:)
+    Error(err) -> Error(err)
+  }
+}
+
+/// Glob files from a chosen directory.
+pub fn glob_from(
+  pattern pattern: Pattern,
+  directory directory: String,
+) -> Result(List(String), FileError) {
+  case simplifile.get_files(in: directory) {
+    Ok(files) ->
+      Ok(list.filter(files, keeping: match_pattern(pattern:, path: _)))
+    Error(err) -> Error(err)
+  }
 }
 
 // Convert path pattern graphemes into a regex syntax string.

@@ -68,17 +68,23 @@ Allow wildcards like `?`, `*` and `**` to match dotfiles.
 ```gleam
 import gleam/io
 import gleam/list
+import gleam/string
 import globlin
 
 pub fn main() {
   let assert Ok(pattern) = globlin.new_pattern("**/*.gleam")
-
-  [
-    "src/main.gleam", "src/globlin.gleam", "test/globlin_test.gleam",
-    ".gitignore", "gleam/toml", "LICENSE", "manifest.toml", "README.md",
-  ]
-  |> list.filter(globlin.match_pattern(pattern:, path: _))
-  |> list.each(io.debug)
+  case globlin.glob(pattern) {
+    Ok(files) -> {
+      files
+      |> list.sort(string.compare)
+      |> list.each(io.println)
+    }
+    Error(err) -> {
+      io.print("File error: ")
+      io.debug(err)
+      Nil
+    }
+  }
 }
 ```
 

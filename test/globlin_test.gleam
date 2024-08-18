@@ -185,3 +185,14 @@ pub fn raw_brackets_test() {
     |> should.be_ok
   })
 }
+
+pub fn glob_test() {
+  globlin.new_pattern("**/test/*.gleam")
+  |> should.be_ok
+  |> globlin.glob
+  |> should.be_ok
+  |> list.first
+  |> should.be_ok
+  |> string.ends_with("/test/globlin_test.gleam")
+  |> should.be_true
+}
