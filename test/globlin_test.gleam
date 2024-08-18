@@ -6,7 +6,7 @@ import gleam/list
 import gleam/string
 import gleeunit
 import gleeunit/should
-import path_pattern
+import globlin
 
 pub fn main() {
   gleeunit.main()
@@ -16,17 +16,17 @@ type Pair {
   Pair(content: String, pattern: String)
 }
 
-const empty_options = path_pattern.PatternOptions(
+const empty_options = globlin.PatternOptions(
   ignore_case: False,
   match_dotfiles: False,
 )
 
-const no_case_options = path_pattern.PatternOptions(
+const no_case_options = globlin.PatternOptions(
   ignore_case: True,
   match_dotfiles: False,
 )
 
-const with_dots_options = path_pattern.PatternOptions(
+const with_dots_options = globlin.PatternOptions(
   ignore_case: False,
   match_dotfiles: True,
 )
@@ -34,11 +34,11 @@ const with_dots_options = path_pattern.PatternOptions(
 fn check_pattern(
   pair pair: Pair,
   is_match is_match: Bool,
-  options options: path_pattern.PatternOptions,
+  options options: globlin.PatternOptions,
 ) -> Nil {
-  path_pattern.new_pattern_with(pair.pattern, from: "", with: options)
+  globlin.new_pattern_with(pair.pattern, from: "", with: options)
   |> should.be_ok
-  |> path_pattern.match_pattern(pair.content)
+  |> globlin.match_pattern(pair.content)
   |> should.equal(is_match)
 }
 
@@ -143,13 +143,13 @@ pub fn globstar_test() {
 pub fn from_directory_test() {
   ["/home/", "/home"]
   |> list.each(fn(directory) {
-    path_pattern.new_pattern_with(
+    globlin.new_pattern_with(
       "documents/**/img_*.png",
       from: directory,
       with: empty_options,
     )
     |> should.be_ok
-    |> path_pattern.match_pattern(
+    |> globlin.match_pattern(
       path: "/home/documents/mallorca_2012/img_beach.png",
     )
     |> should.be_true
@@ -159,22 +159,18 @@ pub fn from_directory_test() {
 pub fn invalid_pattern_test() {
   ["[", "abc[def", "abc[def\\]g", "]]]][[]["]
   |> list.each(fn(pattern) {
-    path_pattern.new_pattern(pattern)
-    |> should.equal(Error(path_pattern.MissingClosingBracketError))
+    globlin.new_pattern(pattern)
+    |> should.equal(Error(globlin.MissingClosingBracketError))
   })
 
   ["ab**cd", "one/two**/three", "four/**five/six", "**seven", "eight**"]
   |> list.each(fn(pattern) {
-    path_pattern.new_pattern(pattern)
-    |> should.equal(Error(path_pattern.InvalidGlobStarError))
+    globlin.new_pattern(pattern)
+    |> should.equal(Error(globlin.InvalidGlobStarError))
   })
 
-  path_pattern.new_pattern_with(
-    "/**/*.json",
-    from: "/home",
-    with: empty_options,
-  )
-  |> should.equal(Error(path_pattern.AbsolutePatternFromDirError))
+  globlin.new_pattern_with("/**/*.json", from: "/home", with: empty_options)
+  |> should.equal(Error(globlin.AbsolutePatternFromDirError))
 }
 
 // JS: In unicode aware mode these need to be escaped explicitly.
@@ -185,7 +181,7 @@ pub fn raw_brackets_test() {
     "()))",
   ]
   |> list.each(fn(pattern) {
-    path_pattern.new_pattern(pattern)
+    globlin.new_pattern(pattern)
     |> should.be_ok
   })
 }

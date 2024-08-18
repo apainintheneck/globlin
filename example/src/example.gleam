@@ -1,7 +1,7 @@
 import gleam/io
 import gleam/list
 import gleam/string
-import path_pattern
+import globlin
 import simplifile.{type FileError}
 
 pub fn main() {
@@ -22,17 +22,15 @@ pub fn main() {
 fn glob(pattern: String) -> Result(List(String), FileError) {
   let assert Ok(directory) = simplifile.current_directory()
   let assert Ok(matcher) =
-    path_pattern.new_pattern_with(
+    globlin.new_pattern_with(
       pattern,
       from: directory,
-      with: path_pattern.PatternOptions(False, False),
+      with: globlin.PatternOptions(False, False),
     )
 
   case simplifile.get_files(in: directory) {
     Ok(files) ->
-      Ok(
-        list.filter(files, path_pattern.match_pattern(pattern: matcher, path: _)),
-      )
+      Ok(list.filter(files, globlin.match_pattern(pattern: matcher, path: _)))
     Error(err) -> Error(err)
   }
 }

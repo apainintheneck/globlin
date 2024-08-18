@@ -1,14 +1,14 @@
-# path_pattern
+# globlin
 
-[![Package Version](https://img.shields.io/hexpm/v/path_pattern)](https://hex.pm/packages/path_pattern)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/path_pattern/)
+[![Package Version](https://img.shields.io/hexpm/v/globlin)](https://hex.pm/packages/globlin)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/globlin/)
 
-This package brings `fnmatch` path matching to Gleam. A `PathPattern` is created by compiling the glob pattern string into the equivalent regex internally. This pattern can then be compared against other strings to find matching paths.
+This package brings file globbing to Gleam. A `Pattern` is created by compiling the glob pattern string into the equivalent regex internally. This pattern can then be compared against other strings to find matching paths.
 
 ## Add Dependency
 
 ```sh
-gleam add path_pattern
+gleam add globlin
 ```
 
 ## Pattern Syntax
@@ -53,7 +53,7 @@ This matches any character not included in a range.
 
 ## Option Flags
 
-There are two option flags available to change the behavior of matching. They are both turned off by default when using the `for_pattern` and `for_pattern_from_directory` methods.
+There are two option flags available to change the behavior of matching. They are both turned off by default when using the `new_pattern` method.
 
 ### `ignore_case`
 
@@ -68,21 +68,21 @@ Allow wildcards like `?`, `*` and `**` to match dotfiles.
 ```gleam
 import gleam/io
 import gleam/list
-import path_pattern
+import globlin
 
 pub fn main() {
-  let assert Ok(pattern) = path_pattern.new_pattern("**/*.gleam")
+  let assert Ok(pattern) = globlin.new_pattern("**/*.gleam")
 
   [
-    "src/main.gleam", "src/path_pattern.gleam", "test/path_pattern_test.gleam",
+    "src/main.gleam", "src/globlin.gleam", "test/globlin_test.gleam",
     ".gitignore", "gleam/toml", "LICENSE", "manifest.toml", "README.md",
   ]
-  |> list.filter(path_pattern.match_pattern(pattern:, path: _))
+  |> list.filter(globlin.match_pattern(pattern:, path: _))
   |> list.each(io.debug)
 }
 ```
 
-Further documentation can be found at <https://hexdocs.pm/path_pattern>.
+Further documentation can be found at <https://hexdocs.pm/globlin>.
 
 ## Development
 
