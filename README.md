@@ -71,13 +71,13 @@ import gleam/list
 import path_pattern
 
 pub fn main() {
-  let assert Ok(matcher) = path_pattern.for_pattern("**/*.gleam")
+  let assert Ok(pattern) = path_pattern.new_pattern("**/*.gleam")
 
   [
     "src/main.gleam", "src/path_pattern.gleam", "test/path_pattern_test.gleam",
     ".gitignore", "gleam/toml", "LICENSE", "manifest.toml", "README.md",
   ]
-  |> list.filter(path_pattern.check(with: matcher, path: _))
+  |> list.filter(path_pattern.match_pattern(pattern:, path: _))
   |> list.each(io.debug)
 }
 ```

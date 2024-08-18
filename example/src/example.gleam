@@ -22,11 +22,17 @@ pub fn main() {
 fn glob(pattern: String) -> Result(List(String), FileError) {
   let assert Ok(directory) = simplifile.current_directory()
   let assert Ok(matcher) =
-    path_pattern.for_pattern_from_directory(pattern:, directory:)
+    path_pattern.new_pattern_with(
+      pattern,
+      from: directory,
+      with: path_pattern.PatternOptions(False, False),
+    )
 
   case simplifile.get_files(in: directory) {
     Ok(files) ->
-      Ok(list.filter(files, path_pattern.check(with: matcher, path: _)))
+      Ok(
+        list.filter(files, path_pattern.match_pattern(pattern: matcher, path: _)),
+      )
     Error(err) -> Error(err)
   }
 }
