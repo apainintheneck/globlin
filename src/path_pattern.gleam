@@ -2,16 +2,31 @@ import gleam/list
 import gleam/regex
 import gleam/string
 
+/// Each path pattern holds a compiled regex and options.
 pub opaque type PathPattern {
   PathPattern(regex: regex.Regex, options: Options)
 }
 
+/// Options that can be provided to the `compile` method.
+///
+/// - ignore_case: All matching is case insensitive (Default: False)
+/// - match_dotfiles: Match dotfiles when using wildcards (Default: False)
 pub type Options {
   Options(ignore_case: Bool, match_dotfiles: Bool)
 }
 
 const empty_options = Options(ignore_case: False, match_dotfiles: False)
 
+/// Errors:
+/// - AbsolutePatternFromDirError
+///   - The pattern must NOT start with a slash if compiled with a directory prefix.
+/// - InvalidGlobStarError
+///   - The globstar ("**") must always appear between the end of a string and/or a slash.
+/// - MissingClosingBracketError
+///   - A char set or range was opened but never closed.
+/// - RegexCompileError
+///   - Error propogated from the `gleam/regex` library.
+///   - This should NEVER happen so let me know if you ever see this.
 pub type Error {
   AbsolutePatternFromDirError
   InvalidGlobStarError
@@ -19,10 +34,12 @@ pub type Error {
   RegexCompileError(context: regex.CompileError)
 }
 
+/// Compile a `PathPattern` from a pattern.
 pub fn for_pattern(pattern pattern: String) -> Result(PathPattern, Error) {
   compile(directory: "", pattern:, with: empty_options)
 }
 
+/// Compile a `PathPattern` from a pattern and a directory prefix.
 pub fn for_pattern_from_directory(
   pattern pattern: String,
   directory directory: String,
@@ -30,6 +47,8 @@ pub fn for_pattern_from_directory(
   compile(directory:, pattern:, with: empty_options)
 }
 
+/// Compile a `PathPattern` from a directory, pattern and options. Leave the
+/// directory blank if it's not needed and it will be ignored.
 pub fn compile(
   directory directory: String,
   pattern pattern: String,
@@ -48,10 +67,12 @@ pub fn compile(
   }
 }
 
+/// Compare a path pattern against a path to see if they match.
 pub fn check(with pattern: PathPattern, path path: String) -> Bool {
   regex.check(with: pattern.regex, content: path)
 }
 
+// Convert path pattern graphemes into a regex syntax string.
 fn convert_pattern(
   prefix: String,
   pattern: String,
@@ -71,6 +92,11 @@ fn convert_pattern(
   }
 }
 
+// Escape all characters in the directory prefix and add a slash
+// before the following regex pattern if it's not already there.
+//
+// Note: The chars are returned in reverse order since we will
+// be prepending to them later on in the `do_convert_pattern` method.
 fn parse_path_chars(prefix: String) -> List(String) {
   prefix
   |> string.to_graphemes
@@ -84,6 +110,7 @@ fn parse_path_chars(prefix: String) -> List(String) {
   }
 }
 
+// Recursively convert path pattern graphemes into a regex syntax string.
 fn do_convert_pattern(
   graphemes: List(String),
   path_chars: List(String),
@@ -191,6 +218,7 @@ fn do_convert_pattern(
   }
 }
 
+// Escape regex meta characters that should be matched literally inside the regex.
 fn escape_meta_char(char: String) -> String {
   case char {
     // Erlang: Metacharacters need to be escaped to avoid unexpected matching.
@@ -216,12 +244,14 @@ fn escape_meta_char(char: String) -> String {
 }
 
 // All wildcards ignore dotfiles by default unless the `match_dotfiles`
-// option is present. It is also possible to match dotfiles using literal dots
+// option is present. It is also possible to match dotfiles using literal dots,
 // char sets or ranges.
 fn ignore_dotfiles(path_chars: List(String), options: Options) -> Bool {
   !options.match_dotfiles && start_of_directory(path_chars)
 }
 
+// The start of a directory is the beginning of the path pattern or
+// anything immediately following a slash.
 fn start_of_directory(path_chars: List(String)) -> Bool {
   case path_chars {
     [] | [""] -> True
