@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v2.0.1
+- Add references to the `globlin_fs` file system package
+    - Includes the file system logic removed in v2.0.0
+
 ## v2.0.0 - 2024-08-19
 - Remove file system dependencies so library can work in the browser
     - Remove `glob` and `glob_from` methods

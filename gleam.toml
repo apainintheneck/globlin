@@ -1,8 +1,9 @@
 name = "globlin"
-version = "2.0.0"
+version = "2.0.1"
 description = "file globbing for Gleam"
 licences = ["MIT"]
 repository = { type = "github", user = "apainintheneck", repo = "globlin" }
+links = [{ title = "Globlin File System Package", href = "https://hexdocs.pm/globlin_fs/index.html" }]
 
 [dependencies]
 gleam_stdlib = ">= 0.34.0 and < 2.0.0"
