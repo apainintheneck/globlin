@@ -5,6 +5,8 @@
 
 This package brings file globbing to Gleam. A `Pattern` is created by compiling the glob pattern string into the equivalent regex internally. This pattern can then be compared against other strings to find matching paths.
 
+Note: This library doesn't include methods to directly query the file system so that it can be used in the browser where that isn't available.
+
 ## Add Dependency
 
 ```sh
@@ -68,23 +70,21 @@ Allow wildcards like `?`, `*` and `**` to match dotfiles.
 ```gleam
 import gleam/io
 import gleam/list
-import gleam/string
 import globlin
 
 pub fn main() {
+  let files = [
+    ".gitignore", "gleam.toml", "LICENCE", "manifest.toml", "README.md",
+    "src/globlin.gleam", "test/globlin_test.gleam",
+  ]
+
   let assert Ok(pattern) = globlin.new_pattern("**/*.gleam")
-  case globlin.glob(pattern) {
-    Ok(files) -> {
-      files
-      |> list.sort(string.compare)
-      |> list.each(io.println)
-    }
-    Error(err) -> {
-      io.print("File error: ")
-      io.debug(err)
-      Nil
-    }
-  }
+
+  files
+  |> list.filter(keeping: globlin.match_pattern(pattern:, path: _))
+  |> list.each(io.println)
+  // src/globlin.gleam
+  // test/globlin_test.gleam
 }
 ```
 
