@@ -17,20 +17,13 @@ pub type PatternOptions {
 
 const empty_options = PatternOptions(ignore_case: False, match_dotfiles: False)
 
-/// - AbsolutePatternFromDirError
-///   - The pattern must NOT start with a slash if compiled with a directory prefix.
-/// - InvalidGlobStarError
-///   - The globstar ("**") must always appear between the end of a string and/or a slash.
-/// - MissingClosingBracketError
-///   - A char set or range was opened but never closed.
-/// - RegexCompileError
-///   - Error propogated from the `gleam/regex` library.
-///   - This should NEVER happen so let me know if you ever see this.
 pub type PatternError {
+  ///   - The pattern must NOT start with a slash if compiled with a directory prefix.
   AbsolutePatternFromDirError
+  ///   - The globstar ("**") must always appear between the end of a string and/or a slash.
   InvalidGlobStarError
+  ///   - A char set or range was opened but never closed.
   MissingClosingBracketError
-  RegexCompileError(context: regex.CompileError)
 }
 
 /// Compile a `Pattern` from a pattern.
@@ -51,14 +44,25 @@ pub fn new_pattern_with(
         regex.Options(case_insensitive: options.ignore_case, multi_line: False)
       case regex.compile(pattern, with: regex_options) {
         Ok(regex) -> Ok(Pattern(regex:, options:))
-        Error(err) -> Error(RegexCompileError(err))
+        // This should be unreachable as all converted patterns should be valid regex expressions.
+        Error(err) -> {
+          let error_message =
+            "Globlin Regex Compile Bug: "
+            <> "with directory '"
+            <> directory
+            <> "' and pattern '"
+            <> pattern
+            <> "': "
+            <> err.error
+          panic as error_message
+        }
       }
     }
     Error(err) -> Error(err)
   }
 }
 
-/// Compare a path pattern against a path to see if they match.
+/// Compare a `Pattern` against a path to see if they match.
 pub fn match_pattern(pattern pattern: Pattern, path path: String) -> Bool {
   regex.check(with: pattern.regex, content: path)
 }
