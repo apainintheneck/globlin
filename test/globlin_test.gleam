@@ -186,13 +186,15 @@ pub fn raw_brackets_test() {
   })
 }
 
-pub fn glob_test() {
-  globlin.new_pattern("**/test/*.gleam")
-  |> should.be_ok
-  |> globlin.glob
-  |> should.be_ok
-  |> list.first
-  |> should.be_ok
-  |> string.ends_with("/test/globlin_test.gleam")
-  |> should.be_true
+pub fn readme_test() {
+  let files = [
+    ".gitignore", "gleam.toml", "LICENCE", "manifest.toml", "README.md",
+    "src/globlin.gleam", "test/globlin_test.gleam",
+  ]
+
+  let assert Ok(pattern) = globlin.new_pattern("**/*.gleam")
+
+  files
+  |> list.filter(keeping: globlin.match_pattern(pattern:, path: _))
+  |> should.equal(["src/globlin.gleam", "test/globlin_test.gleam"])
 }
