@@ -1,5 +1,5 @@
 name = "globlin"
-version = "2.0.1"
+version = "2.0.2"
 description = "file globbing for Gleam"
 licences = ["MIT"]
 repository = { type = "github", user = "apainintheneck", repo = "globlin" }
