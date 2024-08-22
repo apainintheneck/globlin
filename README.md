@@ -7,6 +7,8 @@ This package brings file globbing to Gleam. A `Pattern` is created by compiling 
 
 Note: This library doesn't include methods to directly query the file system so that it can be used in the browser where that isn't available. If you're looking for file system globbing, check out the [globlin_fs](https://hexdocs.pm/globlin_fs/index.html) package.
 
+Note 2: This library only currently supports Unix style file paths. That means it should work on Linux, macOS and BSD.
+
 ## Add Dependency
 
 ```sh
