@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v2.0.2
+- Add note clarifying that this only supports Unix file paths right now
+
 ## v2.0.1
 - Add references to the `globlin_fs` file system package
     - Includes the file system logic removed in v2.0.0
