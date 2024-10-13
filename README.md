@@ -35,7 +35,7 @@ Examples:
 - Isolated: `**`
 - Prefix: `**/tail`
 - Infix: `head/**/tail`
-- Postfix: `**`
+- Postfix: `head/**`
 
 Note: When found at the end of the pattern, it matches all directories and files.
 
