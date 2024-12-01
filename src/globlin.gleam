@@ -1,10 +1,10 @@
 import gleam/list
-import gleam/regex
+import gleam/regexp
 import gleam/string
 
 /// Each path pattern holds a compiled regex and options.
 pub opaque type Pattern {
-  Pattern(regex: regex.Regex, options: PatternOptions)
+  Pattern(regex: regexp.Regexp, options: PatternOptions)
 }
 
 /// Options that can be provided to the `new_pattern_with` method.
@@ -41,8 +41,8 @@ pub fn new_pattern_with(
   case convert_pattern(directory, pattern, options) {
     Ok(pattern) -> {
       let regex_options =
-        regex.Options(case_insensitive: options.ignore_case, multi_line: False)
-      case regex.compile(pattern, with: regex_options) {
+        regexp.Options(case_insensitive: options.ignore_case, multi_line: False)
+      case regexp.compile(pattern, with: regex_options) {
         Ok(regex) -> Ok(Pattern(regex:, options:))
         // This should be unreachable as all converted patterns should be valid regex expressions.
         Error(err) -> {
@@ -64,7 +64,7 @@ pub fn new_pattern_with(
 
 /// Compare a `Pattern` against a path to see if they match.
 pub fn match_pattern(pattern pattern: Pattern, path path: String) -> Bool {
-  regex.check(with: pattern.regex, content: path)
+  regexp.check(with: pattern.regex, content: path)
 }
 
 // Convert path pattern graphemes into a regex syntax string.
