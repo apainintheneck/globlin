@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v2.0.3
+- Support separate `gleam_regexp` package since the original regex module got removed from the `gleam_stdlib` package
+
 ## v2.0.2
 - Add note clarifying that this only supports Unix file paths right now
 
